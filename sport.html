@@ -16,7 +16,6 @@
   th,td{padding:8px;border-bottom:1px solid #eee;text-align:center}
   th{background:#f3f6fb}
   .small{font-size:12px;color:#666}
-  .del{cursor:pointer;color:#e53935}
   .status{margin-top:8px;font-size:13px;color:#666}
   @media(max-width:640px){form{flex-direction:column;align-items:stretch}}
 </style>
@@ -26,6 +25,7 @@
     <h1>🏅 共享体育成绩记录（多人）</h1>
 
     <form id="recordForm">
+      <input type="text" id="name" placeholder="姓名" required />
       <input type="date" id="date" required />
       <select id="event">
         <option>跑步</option>
@@ -42,33 +42,38 @@
 
     <table id="recordsTable" aria-live="polite">
       <thead>
-        <tr><th>日期</th><th>项目</th><th>成绩</th><th>提交时间</th><th>操作</th></tr>
+        <tr><th>姓名</th><th>日期</th><th>项目</th><th>成绩</th></tr>
       </thead>
       <tbody></tbody>
     </table>
 
-    <p class="small">提示：任何人均可提交与删除（如需管理员审核，请告诉我）。</p>
+    <p class="small">提示：任何人均可提交记录。</p>
   </div>
 
   <!-- Supabase JS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script>
-    // ---------- Supabase 配置 ----------
     const SUPABASE_URL = "https://jozhcjtuoveuavxmibjo.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpvemhjanR1b3ZldWF2eG1pYmpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIyMzAxODMsImV4cCI6MjA3NzgwNjE4M30.AUEyXqe8mm4PVHpLYzpWZ98BMT4kUbKNNS2U2QHMSAs";
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    // ----------------------------------
+    const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const tableBody = document.querySelector('#recordsTable tbody');
     const statusEl = document.getElementById('status');
+    const dateInput = document.getElementById('date');
 
-    // 加载数据并渲染
+    // 自动填入今天日期
+    (function setToday(){
+      const today = new Date().toISOString().split('T')[0];
+      dateInput.value = today;
+    })();
+
+    // 加载数据
     async function loadRecords() {
       statusEl.textContent = '加载中…';
       const { data, error } = await supabase
         .from('records')
         .select('*')
-        .order('created_at', { ascending: false })
+        .order('date', { ascending: false })
         .limit(1000);
       if (error) {
         console.error(error);
@@ -79,39 +84,36 @@
       statusEl.textContent = `已加载 ${ (data||[]).length } 条记录`;
     }
 
-    // 渲染表格
     function renderTable(rows) {
       tableBody.innerHTML = '';
       if (!rows || rows.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="5" class="small">暂无记录</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="4" class="small">暂无记录</td></tr>';
         return;
       }
       rows.forEach(r => {
         const tr = document.createElement('tr');
-        const created = r.created_at ? new Date(r.created_at).toLocaleString() : '';
         tr.innerHTML = `
-          <td>${r.date || ''}</td>
+          <td>${escapeHtml(r.name || '')}</td>
+          <td>${escapeHtml(r.date || '')}</td>
           <td>${escapeHtml(r.event || '')}</td>
           <td>${escapeHtml(r.result || '')}</td>
-          <td>${created}</td>
-          <td><span class="del" data-id="${r.id}">删除</span></td>
         `;
         tableBody.appendChild(tr);
       });
     }
 
-    // 提交表单
     document.getElementById('recordForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      const name = document.getElementById('name').value.trim();
       const date = document.getElementById('date').value;
       const event = document.getElementById('event').value.trim();
       const result = document.getElementById('result').value.trim();
-      if (!date || !event || !result) return alert('请完整填写日期、项目和成绩');
+      if (!name || !date || !event || !result) return alert('请完整填写所有内容');
       document.querySelector('button[type="submit"]').disabled = true;
 
       const { data, error } = await supabase
         .from('records')
-        .insert([{ date, event, result }])
+        .insert([{ name, date, event, result }])
         .select();
 
       document.querySelector('button[type="submit"]').disabled = false;
@@ -122,33 +124,15 @@
         return;
       }
       document.getElementById('result').value = '';
-      document.getElementById('date').value = '';
+      document.getElementById('name').value = '';
+      setToday(); // 自动重置日期为今天
       await loadRecords();
     });
 
-    // 删除记录
-    tableBody.addEventListener('click', async (e) => {
-      if (!e.target.matches('.del')) return;
-      const id = e.target.getAttribute('data-id');
-      if (!confirm('确定要删除这条记录吗？')) return;
-      const { error } = await supabase
-        .from('records')
-        .delete()
-        .eq('id', id);
-      if (error) {
-        console.error(error);
-        alert('删除失败：' + (error.message || error));
-        return;
-      }
-      await loadRecords();
-    });
-
-    // 订阅实时更新
     function setupRealtime() {
       try {
         const channel = supabase.channel('public:records')
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'records' }, payload => {
-            console.log('Realtime event:', payload);
+          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'records' }, payload => {
             loadRecords();
           })
           .subscribe();
@@ -158,7 +142,6 @@
       }
     }
 
-    // 防 XSS
     function escapeHtml(s) {
       return String(s || '')
         .replace(/&/g, '&amp;')
@@ -168,11 +151,9 @@
         .replace(/'/g, '&#039;');
     }
 
-    // 初始化
     (async function init(){
       await loadRecords();
       setupRealtime();
-      statusEl.textContent = '连接成功 ✅';
     })();
   </script>
 </body>
