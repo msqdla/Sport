@@ -59,34 +59,30 @@
 
     const tableBody = document.querySelector('#recordsTable tbody');
     const statusEl = document.getElementById('status');
-    const dateInput = document.getElementById('date');
 
-    // 自动填入今天日期
-    (function setToday(){
-      const today = new Date().toISOString().split('T')[0];
-      dateInput.value = today;
-    })();
+    // 自动设置今天日期
+    document.getElementById('date').value = new Date().toISOString().split('T')[0];
 
-    // 加载数据
     async function loadRecords() {
       statusEl.textContent = '加载中…';
       const { data, error } = await supabase
         .from('records')
         .select('*')
-        .order('date', { ascending: false })
-        .limit(1000);
+        .order('date', { ascending: false });
+
       if (error) {
         console.error(error);
         statusEl.textContent = '加载失败：' + (error.message || error);
         return;
       }
+
       renderTable(data || []);
-      statusEl.textContent = `已加载 ${ (data||[]).length } 条记录`;
+      statusEl.textContent = `已加载 ${data.length} 条记录`;
     }
 
     function renderTable(rows) {
       tableBody.innerHTML = '';
-      if (!rows || rows.length === 0) {
+      if (!rows.length) {
         tableBody.innerHTML = '<tr><td colspan="4" class="small">暂无记录</td></tr>';
         return;
       }
@@ -106,41 +102,27 @@
       e.preventDefault();
       const name = document.getElementById('name').value.trim();
       const date = document.getElementById('date').value;
-      const event = document.getElementById('event').value.trim();
+      const event = document.getElementById('event').value;
       const result = document.getElementById('result').value.trim();
-      if (!name || !date || !event || !result) return alert('请完整填写所有内容');
+
+      if (!name || !date || !event || !result) return alert('请完整填写');
+
       document.querySelector('button[type="submit"]').disabled = true;
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('records')
-        .insert([{ name, date, event, result }])
-        .select();
+        .insert([{ name, date, event, result }]);
 
       document.querySelector('button[type="submit"]').disabled = false;
 
       if (error) {
         console.error(error);
         alert('提交失败：' + (error.message || error));
-        return;
+      } else {
+        document.getElementById('result').value = '';
+        loadRecords();
       }
-      document.getElementById('result').value = '';
-      document.getElementById('name').value = '';
-      setToday(); // 自动重置日期为今天
-      await loadRecords();
     });
-
-    function setupRealtime() {
-      try {
-        const channel = supabase.channel('public:records')
-          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'records' }, payload => {
-            loadRecords();
-          })
-          .subscribe();
-        console.log('Realtime subscribed', channel);
-      } catch (err) {
-        console.warn('Realtime subscribe failed', err);
-      }
-    }
 
     function escapeHtml(s) {
       return String(s || '')
@@ -151,9 +133,8 @@
         .replace(/'/g, '&#039;');
     }
 
-    (async function init(){
+    (async function init() {
       await loadRecords();
-      setupRealtime();
     })();
   </script>
 </body>
