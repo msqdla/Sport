@@ -107,7 +107,8 @@
       const result = document.getElementById('result').value.trim();
       if (!date || !event || !result) return alert('请完整填写日期、项目和成绩');
       document.querySelector('button[type="submit"]').disabled = true;
-      const { data, error } = await supabase
+      const { data, error } = await supabase.from('records').select('*');
+
         .from('records')
         .insert([{ date, event, result }])
         .select();
@@ -188,3 +189,4 @@
   </script>
 </body>
 </html>
+
