@@ -47,17 +47,17 @@
       <tbody></tbody>
     </table>
 
-    <p class="small">提示：任何人均可提交与删除（如果你需要更严格权限，告诉我，我会帮你改成管理员审核模式）。</p>
+    <p class="small">提示：任何人均可提交与删除（如需管理员审核，请告诉我）。</p>
   </div>
 
-  <!-- Supabase JS（cdn） -->
+  <!-- Supabase JS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script>
-    // ---------- 配置（已替换为你提供的值） ----------
+    // ---------- Supabase 配置 ----------
     const SUPABASE_URL = "https://jozhcjtuoveuavxmibjo.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpvemhjanR1b3ZldWF2eG1pYmpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIyMzAxODMsImV4cCI6MjA3NzgwNjE4M30.AUEyXqe8mm4PVHpLYzpWZ98BMT4kUbKNNS2U2QHMSAs";
-    // -------------------------------------------------
-    const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // ----------------------------------
 
     const tableBody = document.querySelector('#recordsTable tbody');
     const statusEl = document.getElementById('status');
@@ -79,6 +79,7 @@
       statusEl.textContent = `已加载 ${ (data||[]).length } 条记录`;
     }
 
+    // 渲染表格
     function renderTable(rows) {
       tableBody.innerHTML = '';
       if (!rows || rows.length === 0) {
@@ -107,24 +108,25 @@
       const result = document.getElementById('result').value.trim();
       if (!date || !event || !result) return alert('请完整填写日期、项目和成绩');
       document.querySelector('button[type="submit"]').disabled = true;
-      const { data, error } = await supabase.from('records').select('*');
+
+      const { data, error } = await supabase
         .from('records')
         .insert([{ date, event, result }])
         .select();
+
       document.querySelector('button[type="submit"]').disabled = false;
+
       if (error) {
         console.error(error);
         alert('提交失败：' + (error.message || error));
         return;
       }
-      // 清空输入，服务器会通过 realtime 推送/或我们直接 reload
       document.getElementById('result').value = '';
       document.getElementById('date').value = '';
-      // 新记录会通过 realtime 自动显示，但这里也主动刷新一次以防万一
       await loadRecords();
     });
 
-    // 删除一条记录
+    // 删除记录
     tableBody.addEventListener('click', async (e) => {
       if (!e.target.matches('.del')) return;
       const id = e.target.getAttribute('data-id');
@@ -138,24 +140,15 @@
         alert('删除失败：' + (error.message || error));
         return;
       }
-      // 由 realtime 推送或直接 reload
       await loadRecords();
     });
 
-    // 订阅实时变化（INSERT / DELETE / UPDATE）
+    // 订阅实时更新
     function setupRealtime() {
       try {
         const channel = supabase.channel('public:records')
-          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'records' }, payload => {
-            console.log('INSERT', payload);
-            loadRecords();
-          })
-          .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'records' }, payload => {
-            console.log('UPDATE', payload);
-            loadRecords();
-          })
-          .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'records' }, payload => {
-            console.log('DELETE', payload);
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'records' }, payload => {
+            console.log('Realtime event:', payload);
             loadRecords();
           })
           .subscribe();
@@ -165,7 +158,7 @@
       }
     }
 
-    // 工具：防 XSS（简单）
+    // 防 XSS
     function escapeHtml(s) {
       return String(s || '')
         .replace(/&/g, '&amp;')
@@ -177,16 +170,10 @@
 
     // 初始化
     (async function init(){
-      try {
-        // 测试连接
-        const { data: ver } = await supabase.rpc('version').catch(()=>({data:null}));
-        // 有些项目没有 version rpc，所以不以此断定连接
-      } catch(e){}
       await loadRecords();
       setupRealtime();
+      statusEl.textContent = '连接成功 ✅';
     })();
   </script>
 </body>
 </html>
-
-
