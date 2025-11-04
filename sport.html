@@ -1,0 +1,115 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的体育成绩记录</title>
+<style>
+  body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; background: #fafafa; }
+  h1 { text-align: center; }
+  form { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+  input, select, button { padding: 8px; font-size: 1em; border-radius: 6px; border: 1px solid #ccc; }
+  button { background: #007bff; color: white; cursor: pointer; }
+  button:hover { background: #0056b3; }
+  table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+  th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+  th { background: #eee; }
+  .delete-btn { color: red; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<h1>🏃 我的体育成绩记录</h1>
+
+<form id="recordForm">
+  <input type="date" id="date" required>
+  <select id="event">
+    <option value="跑步">跑步</option>
+    <option value="跳远">跳远</option>
+    <option value="仰卧起坐">仰卧起坐</option>
+    <option value="游泳">游泳</option>
+  </select>
+  <input type="text" id="result" placeholder="成绩 (如：5km 25:30)" required>
+  <button type="submit">记录</button>
+</form>
+
+<table id="recordsTable">
+  <thead>
+    <tr>
+      <th>日期</th>
+      <th>项目</th>
+      <th>成绩</th>
+      <th>删除</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+  const form = document.getElementById('recordForm');
+  const tableBody = document.querySelector('#recordsTable tbody');
+  const STORAGE_KEY = 'sports_records_v1';
+
+  // 从localStorage加载数据
+  const loadRecords = () => {
+    const records = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    tableBody.innerHTML = ''; // 清空旧表格
+    records.forEach((record, index) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${record.date}</td>
+        <td>${record.event}</td>
+        <td>${record.result}</td>
+        <td><span class="delete-btn" data-index="${index}">🗑</span></td>
+      `;
+      tableBody.appendChild(tr);
+    });
+  };
+
+  // 保存数据
+  const saveRecords = () => {
+    const rows = Array.from(tableBody.querySelectorAll('tr')).map(tr => {
+      const cells = tr.querySelectorAll('td');
+      return { 
+        date: cells[0].innerText, 
+        event: cells[1].innerText, 
+        result: cells[2].innerText 
+      };
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(rows));
+  };
+
+  // 添加新纪录
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const date = document.getElementById('date').value;
+    const event = document.getElementById('event').value;
+    const result = document.getElementById('result').value;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${date}</td>
+      <td>${event}</td>
+      <td>${result}</td>
+      <td><span class="delete-btn">🗑</span></td>
+    `;
+    tableBody.appendChild(tr);
+
+    form.reset();
+    saveRecords();
+  });
+
+  // 删除记录
+  tableBody.addEventListener('click', e => {
+    if (e.target.classList.contains('delete-btn')) {
+      e.target.closest('tr').remove();
+      saveRecords();
+    }
+  });
+
+  // 页面加载时自动加载数据
+  loadRecords();
+</script>
+
+</body>
+</html>
