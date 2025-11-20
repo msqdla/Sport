@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>共享 — 体育成绩记录</title>
+  <title>王教练体育成绩记录</title>
   <link rel="icon" href="data:;base64,iVBORw0KGgo=">
   <style>
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;margin:0;padding:16px;background:#f7f9fc}
@@ -63,12 +63,16 @@
       </div>
 
       <select id="event">
-        <option>跑步</option>
+        <option>30M</option>
+        <option>60M</option>
         <option>100M</option>
+        <option>150M</option>
+        <option>200M</option>
         <option>400M</option>
+        <option>5000M</option>
         <option>跳远</option>
         <option>仰卧起坐</option>
-        <option>游泳</option>
+        <option>跳绳</option>
         <option>其他</option>
       </select>
       <input type="text" id="result" placeholder="成绩，例如：5km 25:30 / 6.75 m" required />
@@ -97,7 +101,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script>
     // 预设名字列表
-    const PRESET_NAMES = ["张三", "李四", "王五", "赵六", "钱七", "小明", "小红", "刘洋", "陈晨", "周杰"];
+    const PRESET_NAMES = ["莱莱", "陶怡然", "雷浩然", "傅彦瑞", "胡依诺", "吕新怡", "小红", "刘洋", "1","2","3","4","5","6","陈晨", "周杰"];
 
     // ---------- Supabase 配置 ----------
     const SUPABASE_URL = "https://jozhcjtuoveuavxmibjo.supabase.co";
@@ -286,3 +290,4 @@
   </script>
 </body>
 </html>
+
