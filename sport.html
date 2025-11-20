@@ -26,6 +26,18 @@
 
     <form id="recordForm">
       <input type="date" id="date" required />
+      <!-- 在你的 form 内，把原来的姓名 input 和 datalist 替换为以下代码 -->
+
+<input type="text" id="name" placeholder="姓名" list="preset-names" required />
+
+<datalist id="preset-names">
+  <option value="张三">
+  <option value="李四">
+  <option value="王五">
+  <option value="赵六">
+  <option value="钱七">
+  <!-- 在这里添加你想要的任何预设名字 -->
+</datalist>
       <!-- 姓名输入框绑定 datalist -->
       <input type="text" id="name" placeholder="姓名" list="name-suggestions" required />
       <select id="event">
@@ -288,3 +300,4 @@
   </script>
 </body>
 </html>
+
