@@ -17,19 +17,50 @@
     th{background:#f3f6fb}
     .small{font-size:12px;color:#666}
     .status{margin-top:8px;font-size:13px;color:#666}
+
+    /* 模拟下拉菜单样式 */
+    .autocomplete {
+      position: relative;
+      display: inline-block;
+      width: 100%;
+    }
+    .autocomplete-items {
+      position: absolute;
+      border: 1px solid #ddd;
+      border-top: none;
+      z-index: 99;
+      top: 100%;
+      left: 0;
+      right: 0;
+      max-height: 200px;
+      overflow-y: auto;
+      border-radius: 0 0 8px 8px;
+      background: white;
+    }
+    .autocomplete-items div {
+      padding: 8px;
+      cursor: pointer;
+      border-bottom: 1px solid #eee;
+    }
+    .autocomplete-items div:hover {
+      background-color: #f3f6fb;
+    }
+
     @media(max-width:640px){form{flex-direction:column;align-items:stretch}}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>🏅 共享体育成绩记录（多人）</h1>
+    <h1>王教练体育成绩记录（多人）</h1>
 
     <form id="recordForm">
       <input type="date" id="date" required />
-      
-      <!-- 可输入的姓名框，点击主动触发下拉 -->
-      <input type="text" id="name" placeholder="姓名" list="preset-names" required 
-             onclick="this.setSelectionRange(0, this.value.length)" />
+
+      <!-- 使用 div 模拟带下拉的输入框 -->
+      <div class="autocomplete">
+        <input type="text" id="name" placeholder="姓名" required />
+        <div id="autocomplete-list" class="autocomplete-items"></div>
+      </div>
 
       <select id="event">
         <option>跑步</option>
@@ -43,18 +74,6 @@
       <input type="text" id="result" placeholder="成绩，例如：5km 25:30 / 6.75 m" required />
       <button type="submit">提交成绩</button>
     </form>
-
-    <!-- 预设名字列表 -->
-    <datalist id="preset-names">
-      <option value="张三">
-      <option value="李四">
-      <option value="王五">
-      <option value="赵六">
-      <option value="钱七">
-      <option value="小明">
-      <option value="小红">
-      <!-- 可继续添加 -->
-    </datalist>
 
     <div class="status" id="status">正在连接 Supabase…</div>
 
@@ -71,110 +90,173 @@
       <tbody></tbody>
     </table>
 
-    <p class="small">提示：点击姓名框可选择预设名字，也可输入新名字。</p>
+    <p class="small">提示：点击姓名输入框可选择预设名字，也可输入新名字。</p>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script>
+    // 预设名字列表
+    const PRESET_NAMES = ["张三", "李四", "王五", "赵六", "钱七", "小明", "小红", "刘洋", "陈晨", "周杰"];
+
+    // ---------- Supabase 配置 ----------
     const SUPABASE_URL = "https://jozhcjtuoveuavxmibjo.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpvemhjanR1b3ZldWF2eG1pYmpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIyMzAxODMsImV4cCI6MjA3NzgwNjE4M30.AUEyXqe8mm4PVHpLYzpWZ98BMT4kUbKNNS2U2QHMSAs";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // -----------------------------------
 
     const tableBody = document.querySelector('#recordsTable tbody');
     const statusEl = document.getElementById('status');
+    const nameInput = document.getElementById('name');
+    const autocompleteList = document.getElementById('autocomplete-list');
     let allRecords = [];
     let filteredDate = null;
 
+    // 显示预设名字列表
+    function showAutocomplete() {
+      autocompleteList.innerHTML = '';
+      PRESET_NAMES.forEach(name => {
+        const div = document.createElement('div');
+        div.textContent = name;
+        div.onclick = () => {
+          nameInput.value = name;
+          autocompleteList.innerHTML = '';
+        };
+        autocompleteList.appendChild(div);
+      });
+    }
+
+    // 加载数据
     async function loadRecords() {
       statusEl.textContent = '加载中…';
       const { data, error } = await supabase
         .from('records')
         .select('*')
         .order('created_at', { ascending: false });
+
       if (error) {
-        statusEl.textContent = '加载失败';
+        statusEl.textContent = '加载失败：' + (error.message || error);
         return;
       }
+
       allRecords = data || [];
-      renderTable(filteredDate ? allRecords.filter(r => r.date === filteredDate) : allRecords);
+      renderTable(filteredDate 
+        ? allRecords.filter(r => r.date === filteredDate)
+        : allRecords);
       statusEl.textContent = `已加载 ${allRecords.length} 条记录`;
     }
 
+    // 渲染表格（含最佳成绩列）
     function renderTable(rows) {
       tableBody.innerHTML = '';
-      if (!rows.length) {
+      if (!rows || rows.length === 0) {
         tableBody.innerHTML = '<tr><td colspan="5" class="small">暂无记录</td></tr>';
         return;
       }
       rows.forEach(r => {
-        const userRecords = allRecords.filter(r2 => r2.name === r.name && r2.event === r.event);
-        const parseResult = s => parseFloat(s.replace(/[^\d.-]/g, '')) || 0;
-        const isTimeEvent = ['跑步','100M','400M','游泳'].includes(r.event);
-        const best = Math[isTimeEvent?'min':'max'](...userRecords.map(r => parseResult(r.result)).filter(v => v)) || '—';
+        const userRecords = allRecords.filter(
+          record => record.name === r.name && record.event === r.event
+        );
+        
+        const parseResult = (resultStr) => {
+          const num = parseFloat(resultStr.replace(/[^\d.-]/g, ''));
+          return isNaN(num) ? -Infinity : num;
+        };
+        
+        const isTimeEvent = ['跑步', '100M', '400M', '游泳'].includes(r.event);
+        const bestValues = userRecords.map(record => parseResult(record.result));
+        const validValues = bestValues.filter(val => isFinite(val));
+        
+        let bestResult = '—';
+        if (validValues.length > 0) {
+          const bestValue = isTimeEvent 
+            ? Math.min(...validValues)
+            : Math.max(...validValues);
+          bestResult = bestValue;
+        }
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td>${r.date}</td>
-          <td>${r.name}</td>
-          <td>${r.event}</td>
-          <td>${r.result}</td>
-          <td>${best}</td>
+          <td>${r.date || ''}</td>
+          <td>${r.name || ''}</td>
+          <td>${r.event || ''}</td>
+          <td>${r.result || ''}</td>
+          <td>${bestResult}</td>
         `;
         tableBody.appendChild(tr);
       });
     }
 
-    document.getElementById('recordForm').addEventListener('submit', async e => {
+    // 提交表单
+    document.getElementById('recordForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const date = document.getElementById('date').value;
       const name = document.getElementById('name').value.trim();
-      const event = document.getElementById('event').value;
+      const event = document.getElementById('event').value.trim();
       const result = document.getElementById('result').value.trim();
-      if (!date || !name || !event || !result) return alert('请完整填写');
+      if (!date || !name || !event || !result) return alert('请完整填写所有内容');
 
-      const { error } = await supabase.from('records').insert([{ date, name, event, result }]);
-      if (error) return alert('提交失败');
+      document.querySelector('button[type="submit"]').disabled = true;
+      const { error } = await supabase
+        .from('records')
+        .insert([{ date, name, event, result }]);
+      document.querySelector('button[type="submit"]').disabled = false;
+
+      if (error) {
+        console.error(error);
+        alert('提交失败：' + (error.message || error));
+        return;
+      }
 
       document.getElementById('result').value = '';
       document.getElementById('name').value = '';
-      loadRecords();
+      autocompleteList.innerHTML = '';
+      await loadRecords();
     });
 
+    // 实时更新
     function setupRealtime() {
       supabase.channel('records_realtime')
-        .on('postgres_changes', { event: '*', table: 'records' }, () => loadRecords())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'records' }, () => loadRecords())
         .subscribe();
     }
 
+    // 导出为 Excel
     function exportToExcel() {
-      const dataToExport = filteredDate ? allRecords.filter(r => r.date === filteredDate) : allRecords;
-      if (!dataToExport.length) return alert('无数据可导出');
+      const dataToExport = filteredDate
+        ? allRecords.filter(r => r.date === filteredDate)
+        : allRecords;
 
-      const wsData = [['日期','姓名','项目','成绩','最佳成绩']].concat(
+      if (dataToExport.length === 0) return alert('没有可导出的数据！');
+
+      const wsData = [['日期', '姓名', '项目', '成绩', '最佳成绩']].concat(
         dataToExport.map(r => {
-          const userRecords = allRecords.filter(r2 => r2.name === r.name && r2.event === r.event);
-          const parseResult = s => parseFloat(s.replace(/[^\d.-]/g, '')) || 0;
-          const isTimeEvent = ['跑步','100M','400M','游泳'].includes(r.event);
+          const userRecords = allRecords.filter(
+            record => record.name === r.name && record.event === r.event
+          );
+          const parseResult = str => parseFloat(str.replace(/[^\d.-]/g, '')) || 0;
+          const isTimeEvent = ['跑步', '100M', '400M', '游泳'].includes(r.event);
           const values = userRecords.map(r => parseResult(r.result)).filter(v => v);
-          const best = values.length ? Math[isTimeEvent?'min':'max'](...values) : '—';
+          const best = values.length ? (isTimeEvent ? Math.min(...values) : Math.max(...values)) : '—';
           return [r.date, r.name, r.event, r.result, best];
         })
       );
+
       const ws = XLSX.utils.aoa_to_sheet(wsData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, '体育成绩');
-      XLSX.writeFile(wb, `体育成绩${filteredDate?'_'+filteredDate:'_全部'}.xlsx`);
+      XLSX.writeFile(wb, `体育成绩${filteredDate ? '_' + filteredDate : '_全部'}.xlsx`);
     }
 
+    // 初始化
     (async () => {
       const form = document.getElementById('recordForm');
       const controls = document.createElement('div');
-      controls.style.cssText = 'margin:12px 0;display:flex;gap:8px;flex-wrap:wrap';
+      controls.style.cssText = 'margin:12px 0;display:flex;flex-wrap:wrap;gap:8px';
       controls.innerHTML = `
-        <button type="button" id="btnToday">查看今天</button>
-        <button type="button" id="btnAll">查看全部</button>
-        <button type="button" id="btnExport" style="background:#2e7d32">导出 Excel</button>
+        <button type="button" id="btnToday" style="font-size:13px;padding:6px 10px;">查看今天</button>
+        <button type="button" id="btnAll" style="font-size:13px;padding:6px 10px;">查看全部</button>
+        <button type="button" id="btnExport" style="font-size:13px;padding:6px 10px;background:#2e7d32;">导出 Excel</button>
       `;
       form.parentNode.insertBefore(controls, form.nextSibling);
 
@@ -188,7 +270,17 @@
       };
       document.getElementById('btnExport').onclick = exportToExcel;
 
-      loadRecords();
+      // 点击姓名输入框显示预设列表
+      nameInput.onclick = showAutocomplete;
+
+      // 点击页面其他地方隐藏列表
+      document.onclick = (e) => {
+        if (e.target !== nameInput) {
+          autocompleteList.innerHTML = '';
+        }
+      };
+
+      await loadRecords();
       setupRealtime();
     })();
   </script>
