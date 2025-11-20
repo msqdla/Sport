@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title> 王教练—学员体育成绩记录</title>
+  <title>共享 — 体育成绩记录</title>
   <link rel="icon" href="data:;base64,iVBORw0KGgo=">
   <style>
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;margin:0;padding:16px;background:#f7f9fc}
@@ -22,42 +22,41 @@
 </head>
 <body>
   <div class="wrap">
-    <h1>王教练体育成绩记录表（多人）</h1>
+    <h1>🏅 共享体育成绩记录（多人）</h1>
 
     <form id="recordForm">
       <input type="date" id="date" required />
-      <!-- 在你的 form 内，把原来的姓名 input 和 datalist 替换为以下代码 -->
+      
+      <!-- 可输入的姓名框，点击主动触发下拉 -->
+      <input type="text" id="name" placeholder="姓名" list="preset-names" required 
+             onclick="this.setSelectionRange(0, this.value.length)" />
 
-<input type="text" id="name" placeholder="姓名" list="preset-names" required />
-
-<datalist id="preset-names">
-  <option value="莱莱">
-  <option value="陶怡然">
-  <option value="傅彦瑞">
-  <option value="雷浩然">
-  <option value="吕星怡">
-  <!-- 在这里添加你想要的任何预设名字 -->
-</datalist>
-      <!-- 姓名输入框绑定 datalist -->
-      <input type="text" id="name" placeholder="姓名" list="name-suggestions" required />
       <select id="event">
-        <option>30M</option>
-        <option>60M</option>
+        <option>跑步</option>
         <option>100M</option>
-        <option>150M</option>
-        <option>200M</option>
-        <option>300M</option>
+        <option>400M</option>
         <option>跳远</option>
         <option>仰卧起坐</option>
-        <option>跳绳</option>
+        <option>游泳</option>
         <option>其他</option>
       </select>
       <input type="text" id="result" placeholder="成绩，例如：5km 25:30 / 6.75 m" required />
       <button type="submit">提交成绩</button>
     </form>
 
-    <!-- 姓名建议列表（自动补全） -->
-    <datalist id="name-suggestions"></datalist>
+    <!-- 预设名字列表 -->
+    <datalist id="preset-names">
+      <option value="莱莱">
+      <option value="陶怡然">
+      <option value="雷浩然">
+      <option value="满满">
+      <option value="吕星怡">
+      <option value="小明">
+      <option value="小红">
+      <option value="胡依诺”>
+      <option value="王一鸣">
+      <!-- 可继续添加 -->
+    </datalist>
 
     <div class="status" id="status">正在连接 Supabase…</div>
 
@@ -74,231 +73,126 @@
       <tbody></tbody>
     </table>
 
-    <p class="small">提示：点击姓名输入框可选择历史姓名；任何人均可提交。</p>
+    <p class="small">提示：点击姓名框可选择预设名字，也可输入新名字。</p>
   </div>
 
-  <!-- Supabase JS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script>
-    // ---------- Supabase 配置 ----------
     const SUPABASE_URL = "https://jozhcjtuoveuavxmibjo.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpvemhjanR1b3ZldWF2eG1pYmpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIyMzAxODMsImV4cCI6MjA3NzgwNjE4M30.AUEyXqe8mm4PVHpLYzpWZ98BMT4kUbKNNS2U2QHMSAs";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    // -----------------------------------
 
     const tableBody = document.querySelector('#recordsTable tbody');
     const statusEl = document.getElementById('status');
-    const nameInput = document.getElementById('name');
-    const datalist = document.getElementById('name-suggestions');
     let allRecords = [];
     let filteredDate = null;
 
-    // 更新姓名建议列表
-    function updateNameSuggestions() {
-      const names = [...new Set(allRecords.map(r => r.name).filter(Boolean))];
-      datalist.innerHTML = '';
-      names.forEach(name => {
-        const option = document.createElement('option');
-        option.value = name;
-        datalist.appendChild(option);
-      });
-    }
-
-    // 加载数据
     async function loadRecords() {
       statusEl.textContent = '加载中…';
       const { data, error } = await supabase
         .from('records')
         .select('*')
         .order('created_at', { ascending: false });
-
       if (error) {
-        console.error(error);
-        statusEl.textContent = '加载失败：' + (error.message || error);
+        statusEl.textContent = '加载失败';
         return;
       }
-
       allRecords = data || [];
-      updateNameSuggestions(); // 更新建议列表
-
-      const displayData = filteredDate 
-        ? allRecords.filter(r => r.date === filteredDate)
-        : allRecords;
-
-      renderTable(displayData);
-      statusEl.textContent = `已加载 ${displayData.length} 条记录${filteredDate ? `（${filteredDate}）` : '（全部）'}`;
+      renderTable(filteredDate ? allRecords.filter(r => r.date === filteredDate) : allRecords);
+      statusEl.textContent = `已加载 ${allRecords.length} 条记录`;
     }
 
-    // 渲染表格（含最佳成绩列）
     function renderTable(rows) {
       tableBody.innerHTML = '';
-      if (!rows || rows.length === 0) {
+      if (!rows.length) {
         tableBody.innerHTML = '<tr><td colspan="5" class="small">暂无记录</td></tr>';
         return;
       }
       rows.forEach(r => {
-        const userRecords = allRecords.filter(
-          record => record.name === r.name && record.event === r.event
-        );
-        
-        const parseResult = (resultStr) => {
-          const num = parseFloat(resultStr.replace(/[^\d.-]/g, ''));
-          return isNaN(num) ? -Infinity : num;
-        };
-        
-        const isTimeEvent = ['跑步', '100M', '400M', '游泳'].includes(r.event);
-        const bestValues = userRecords.map(record => parseResult(record.result));
-        const validValues = bestValues.filter(val => isFinite(val));
-        
-        let bestResult = '—';
-        if (validValues.length > 0) {
-          const bestValue = isTimeEvent 
-            ? Math.min(...validValues)
-            : Math.max(...validValues);
-          bestResult = bestValue;
-        }
+        const userRecords = allRecords.filter(r2 => r2.name === r.name && r2.event === r.event);
+        const parseResult = s => parseFloat(s.replace(/[^\d.-]/g, '')) || 0;
+        const isTimeEvent = ['跑步','100M','400M','游泳'].includes(r.event);
+        const best = Math[isTimeEvent?'min':'max'](...userRecords.map(r => parseResult(r.result)).filter(v => v)) || '—';
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td>${r.date || ''}</td>
-          <td>${escapeHtml(r.name || '')}</td>
-          <td>${escapeHtml(r.event || '')}</td>
-          <td>${escapeHtml(r.result || '')}</td>
-          <td>${bestResult}</td>
+          <td>${r.date}</td>
+          <td>${r.name}</td>
+          <td>${r.event}</td>
+          <td>${r.result}</td>
+          <td>${best}</td>
         `;
         tableBody.appendChild(tr);
       });
     }
 
-    // 提交表单
-    document.getElementById('recordForm').addEventListener('submit', async (e) => {
+    document.getElementById('recordForm').addEventListener('submit', async e => {
       e.preventDefault();
       const date = document.getElementById('date').value;
       const name = document.getElementById('name').value.trim();
-      const event = document.getElementById('event').value.trim();
+      const event = document.getElementById('event').value;
       const result = document.getElementById('result').value.trim();
-      if (!date || !name || !event || !result) return alert('请完整填写所有内容');
+      if (!date || !name || !event || !result) return alert('请完整填写');
 
-      document.querySelector('button[type="submit"]').disabled = true;
-      const { error } = await supabase
-        .from('records')
-        .insert([{ date, name, event, result }]);
-      document.querySelector('button[type="submit"]').disabled = false;
-
-      if (error) {
-        console.error(error);
-        alert('提交失败：' + (error.message || error));
-        return;
-      }
+      const { error } = await supabase.from('records').insert([{ date, name, event, result }]);
+      if (error) return alert('提交失败');
 
       document.getElementById('result').value = '';
       document.getElementById('name').value = '';
-      await loadRecords();
+      loadRecords();
     });
 
-    // 实时更新
     function setupRealtime() {
-      const channel = supabase.channel('records_realtime')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'records' }, payload => {
-          console.log('Realtime update:', payload);
-          loadRecords();
-        })
+      supabase.channel('records_realtime')
+        .on('postgres_changes', { event: '*', table: 'records' }, () => loadRecords())
         .subscribe();
     }
 
-    // 导出为 Excel
     function exportToExcel() {
-      const dataToExport = filteredDate
-        ? allRecords.filter(r => r.date === filteredDate)
-        : allRecords;
+      const dataToExport = filteredDate ? allRecords.filter(r => r.date === filteredDate) : allRecords;
+      if (!dataToExport.length) return alert('无数据可导出');
 
-      if (dataToExport.length === 0) {
-        return alert('没有可导出的数据！');
-      }
-
-      const wsData = [
-        ['日期', '姓名', '项目', '成绩', '最佳成绩']
-      ].concat(dataToExport.map(r => {
-        const userRecords = allRecords.filter(
-          record => record.name === r.name && record.event === r.event
-        );
-        const parseResult = (resultStr) => {
-          const num = parseFloat(resultStr.replace(/[^\d.-]/g, ''));
-          return isNaN(num) ? -Infinity : num;
-        };
-        const isTimeEvent = ['跑步', '100M', '400M', '游泳'].includes(r.event);
-        const bestValues = userRecords.map(record => parseResult(record.result));
-        const validValues = bestValues.filter(val => isFinite(val));
-        let bestResult = '—';
-        if (validValues.length > 0) {
-          const bestValue = isTimeEvent ? Math.min(...validValues) : Math.max(...validValues);
-          bestResult = bestValue;
-        }
-        return [
-          r.date || '',
-          r.name || '',
-          r.event || '',
-          r.result || '',
-          bestResult
-        ];
-      }));
-
+      const wsData = [['日期','姓名','项目','成绩','最佳成绩']].concat(
+        dataToExport.map(r => {
+          const userRecords = allRecords.filter(r2 => r2.name === r.name && r2.event === r.event);
+          const parseResult = s => parseFloat(s.replace(/[^\d.-]/g, '')) || 0;
+          const isTimeEvent = ['跑步','100M','400M','游泳'].includes(r.event);
+          const values = userRecords.map(r => parseResult(r.result)).filter(v => v);
+          const best = values.length ? Math[isTimeEvent?'min':'max'](...values) : '—';
+          return [r.date, r.name, r.event, r.result, best];
+        })
+      );
       const ws = XLSX.utils.aoa_to_sheet(wsData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, '体育成绩');
-
-      const filename = filteredDate 
-        ? `体育成绩_${filteredDate}.xlsx` 
-        : `体育成绩_全部_${new Date().toISOString().slice(0,10)}.xlsx`;
-
-      XLSX.writeFile(wb, filename);
+      XLSX.writeFile(wb, `体育成绩${filteredDate?'_'+filteredDate:'_全部'}.xlsx`);
     }
 
-    // 工具：防 XSS
-    function escapeHtml(s) {
-      return String(s || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    }
-
-    // 初始化
-    (async function init() {
+    (async () => {
       const form = document.getElementById('recordForm');
       const controls = document.createElement('div');
-      controls.style.marginTop = '12px';
-      controls.style.display = 'flex';
-      controls.style.flexWrap = 'wrap';
-      controls.style.gap = '8px';
-
+      controls.style.cssText = 'margin:12px 0;display:flex;gap:8px;flex-wrap:wrap';
       controls.innerHTML = `
-        <button type="button" id="btnToday" style="font-size:13px;padding:6px 10px;">查看今天</button>
-        <button type="button" id="btnAll" style="font-size:13px;padding:6px 10px;">查看全部</button>
-        <button type="button" id="btnExport" style="font-size:13px;padding:6px 10px;background:#2e7d32;">导出 Excel</button>
+        <button type="button" id="btnToday">查看今天</button>
+        <button type="button" id="btnAll">查看全部</button>
+        <button type="button" id="btnExport" style="background:#2e7d32">导出 Excel</button>
       `;
       form.parentNode.insertBefore(controls, form.nextSibling);
 
-      document.getElementById('btnToday').addEventListener('click', () => {
-        const today = new Date().toISOString().split('T')[0];
-        filteredDate = today;
+      document.getElementById('btnToday').onclick = () => {
+        filteredDate = new Date().toISOString().split('T')[0];
         loadRecords();
-      });
-
-      document.getElementById('btnAll').addEventListener('click', () => {
+      };
+      document.getElementById('btnAll').onclick = () => {
         filteredDate = null;
         loadRecords();
-      });
+      };
+      document.getElementById('btnExport').onclick = exportToExcel;
 
-      document.getElementById('btnExport').addEventListener('click', exportToExcel);
-
-      await loadRecords();
+      loadRecords();
       setupRealtime();
     })();
   </script>
 </body>
 </html>
-
-
