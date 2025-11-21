@@ -6,19 +6,86 @@
   <title>王教练体育成绩记录</title>
   <link rel="icon" href="data:;base64,iVBORw0KGgo=">
   <style>
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;margin:0;padding:16px;background:#f7f9fc}
-    .wrap{max-width:900px;margin:0 auto;background:#fff;padding:18px;border-radius:10px;box-shadow:0 6px 18px rgba(32,41,52,0.08)}
-    h1{margin:0 0 12px;font-size:20px}
-    form{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-    input,select,button{padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px}
-    button{cursor:pointer;background:#0b67ff;color:#fff;border:none}
-    table{width:100%;border-collapse:collapse;margin-top:16px}
-    th,td{padding:8px;border-bottom:1px solid #eee;text-align:center}
-    th{background:#f3f6fb}
-    .small{font-size:12px;color:#666}
-    .status{margin-top:8px;font-size:13px;color:#666}
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+      margin: 0;
+      padding: 16px;
+      background: #f0f4ff; /* 更亮的背景 */
+    }
+    .wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 18px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 60, 180, 0.12);
+    }
+    h1 {
+      margin: 0 0 12px;
+      font-size: 22px;
+      color: #0b4a9e;
+    }
+    form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+    input, select, button {
+      padding: 9px;
+      border: 1px solid #ccd5ff;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    button {
+      cursor: pointer;
+      background: #0b67ff;
+      color: white;
+      border: none;
+      font-weight: bold;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid #eef2ff;
+      text-align: center;
+    }
+    th {
+      background: #e6efff;
+      color: #0b4a9e;
+      font-weight: 600;
+    }
+    /* 斑马纹：偶数行鲜艳浅蓝 */
+    tbody tr:nth-child(even) {
+      background-color: #f0f7ff !important;
+    }
+    tbody tr:nth-child(odd) {
+      background-color: #ffffff !important;
+    }
+    .highlight-name {
+      color: #E63946; /* 红色 */
+      font-weight: bold;
+    }
+    .highlight-best {
+      color: #0D47A1; /* 深蓝色 */
+      font-weight: bold;
+    }
+    .small {
+      font-size: 12px;
+      color: #666;
+    }
+    .status {
+      margin-top: 8px;
+      font-size: 13px;
+      color: #0b67ff;
+      font-weight: 500;
+    }
 
-    /* 模拟下拉菜单样式 */
+    /* 下拉菜单 */
     .autocomplete {
       position: relative;
       display: inline-block;
@@ -26,7 +93,7 @@
     }
     .autocomplete-items {
       position: absolute;
-      border: 1px solid #ddd;
+      border: 1px solid #ccd5ff;
       border-top: none;
       z-index: 99;
       top: 100%;
@@ -36,17 +103,20 @@
       overflow-y: auto;
       border-radius: 0 0 8px 8px;
       background: white;
+      box-shadow: 0 4px 12px rgba(0, 60, 180, 0.1);
     }
     .autocomplete-items div {
-      padding: 8px;
+      padding: 9px;
       cursor: pointer;
-      border-bottom: 1px solid #eee;
+      border-bottom: 1px solid #f0f4ff;
     }
     .autocomplete-items div:hover {
-      background-color: #f3f6fb;
+      background-color: #e6efff;
     }
 
-    @media(max-width:640px){form{flex-direction:column;align-items:stretch}}
+    @media(max-width:640px) {
+      form { flex-direction: column; align-items: stretch; }
+    }
   </style>
 </head>
 <body>
@@ -55,27 +125,25 @@
 
     <form id="recordForm">
       <input type="date" id="date" required />
-
-      <!-- 使用 div 模拟带下拉的输入框 -->
       <div class="autocomplete">
         <input type="text" id="name" placeholder="姓名" required />
+      <br></br>
         <div id="autocomplete-list" class="autocomplete-items"></div>
       </div>
-
       <select id="event">
-        <option>30M</option>
-        <option>60M</option>
-        <option>100M</option>
-        <option>150M</option>
-        <option>200M</option>
-        <option>400M</option>
-        <option>5000M</option>
-        <option>跳远</option>
-        <option>仰卧起坐</option>
-        <option>跳绳</option>
-        <option>其他</option>
+        <option value="30M">30M</option>
+        <option value="60M">60M</option>
+        <option value="100M">100M</option>
+        <option value="150M">150M</option>
+        <option value="200M">200M</option>
+        <option value="400M">400M</option>
+        <option value="5000M">5000M</option>
+        <option value="跳远">跳远</option>
+        <option value="仰卧起坐">仰卧起坐</option>
+        <option value="跳绳">跳绳</option>
+        <option value="其他">其他</option>
       </select>
-      <input type="text" id="result" placeholder="成绩，例如：5km 25:30 / 6.75 m" required />
+      <input type="text" id="result" placeholder="成绩，例如：12.5 秒" required />
       <button type="submit">提交成绩</button>
     </form>
 
@@ -94,29 +162,58 @@
       <tbody></tbody>
     </table>
 
-    <p class="small">提示：点击姓名输入框可选择预设名字，也可输入新名字。</p>
+    <p class="small">提示：点击姓名输入框可选择预设名字；成绩将自动显示单位。</p>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script>
-    // 预设名字列表
     const PRESET_NAMES = ["莱莱", "陶怡然", "雷浩然", "傅彦瑞", "胡依诺", "吕新怡", "小红", "刘洋", "1","2","3","4","5","6","陈晨", "周杰"];
 
-    // ---------- Supabase 配置 ----------
+    // 项目对应单位
+    const EVENT_UNITS = {
+      "30M": "秒", "60M": "秒", "100M": "秒", "150M": "秒",
+      "200M": "秒", "400M": "秒", "5000M": "分:秒",
+      "跳远": "米",
+      "仰卧起坐": "个",
+      "跳绳": "个/分钟",
+      "其他": ""
+    };
+
+    // 提示文本
+    const EVENT_PLACEHOLDERS = {
+      "30M": "例如：4.8 秒",
+      "60M": "例如：8.2 秒",
+      "100M": "例如：12.5 秒",
+      "150M": "例如：18.0 秒",
+      "200M": "例如：25.3 秒",
+      "400M": "例如：58.7 秒",
+      "5000M": "例如：20:30",
+      "跳远": "例如：4.25 米",
+      "仰卧起坐": "例如：45 个",
+      "跳绳": "例如：180 个/分钟",
+      "其他": "请输入成绩"
+    };
+
+    // Supabase
     const SUPABASE_URL = "https://jozhcjtuoveuavxmibjo.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpvemhjanR1b3ZldWF2eG1pYmpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIyMzAxODMsImV4cCI6MjA3NzgwNjE4M30.AUEyXqe8mm4PVHpLYzpWZ98BMT4kUbKNNS2U2QHMSAs";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    // -----------------------------------
 
     const tableBody = document.querySelector('#recordsTable tbody');
     const statusEl = document.getElementById('status');
     const nameInput = document.getElementById('name');
+    const eventSelect = document.getElementById('event');
+    const resultInput = document.getElementById('result');
     const autocompleteList = document.getElementById('autocomplete-list');
     let allRecords = [];
     let filteredDate = null;
 
-    // 显示预设名字列表
+    function updateResultPlaceholder() {
+      const event = eventSelect.value;
+      resultInput.placeholder = EVENT_PLACEHOLDERS[event] || "请输入成绩";
+    }
+
     function showAutocomplete() {
       autocompleteList.innerHTML = '';
       PRESET_NAMES.forEach(name => {
@@ -130,7 +227,6 @@
       });
     }
 
-    // 加载数据
     async function loadRecords() {
       statusEl.textContent = '加载中…';
       const { data, error } = await supabase
@@ -150,48 +246,57 @@
       statusEl.textContent = `已加载 ${allRecords.length} 条记录`;
     }
 
-    // 渲染表格（含最佳成绩列）
+    // 获取带单位的成绩显示
+    function formatResultWithUnit(resultStr, event) {
+      const unit = EVENT_UNITS[event] || "";
+      return unit ? `${resultStr} ${unit}` : resultStr;
+    }
+
+    // 判断是否为“数值型项目”（可计算最佳值并加单位）
+    function isNumericEvent(event) {
+      return !["5000M", "其他"].includes(event); // 5000M 用户输的是时间字符串，不参与数值比较
+    }
+
     function renderTable(rows) {
       tableBody.innerHTML = '';
-      if (!rows || rows.length === 0) {
+      if (!rows?.length) {
         tableBody.innerHTML = '<tr><td colspan="5" class="small">暂无记录</td></tr>';
         return;
       }
+
       rows.forEach(r => {
-        const userRecords = allRecords.filter(
-          record => record.name === r.name && record.event === r.event
-        );
-        
-        const parseResult = (resultStr) => {
-          const num = parseFloat(resultStr.replace(/[^\d.-]/g, ''));
-          return isNaN(num) ? -Infinity : num;
-        };
-        
-        const isTimeEvent = ['跑步', '100M', '400M', '游泳'].includes(r.event);
-        const bestValues = userRecords.map(record => parseResult(record.result));
-        const validValues = bestValues.filter(val => isFinite(val));
-        
-        let bestResult = '—';
-        if (validValues.length > 0) {
-          const bestValue = isTimeEvent 
-            ? Math.min(...validValues)
-            : Math.max(...validValues);
-          bestResult = bestValue;
+        const event = r.event || "";
+        const unit = EVENT_UNITS[event] || "";
+
+        // 原始成绩带单位
+        const displayResult = formatResultWithUnit(r.result || "", event);
+
+        // 计算最佳成绩（仅数值型项目）
+        let bestDisplay = "—";
+        if (isNumericEvent(event)) {
+          const userRecords = allRecords.filter(rec => rec.name === r.name && rec.event === event);
+          const parseNum = s => parseFloat(s.replace(/[^\d.-]/g, '')) || -Infinity;
+          const values = userRecords.map(rec => parseNum(rec.result)).filter(v => isFinite(v));
+          
+          if (values.length > 0) {
+            const isTimeEvent = ["30M","60M","100M","150M","200M","400M"].includes(event);
+            const bestVal = isTimeEvent ? Math.min(...values) : Math.max(...values);
+            bestDisplay = `${bestVal} ${unit}`.trim();
+          }
         }
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${r.date || ''}</td>
-          <td>${r.name || ''}</td>
-          <td>${r.event || ''}</td>
-          <td>${r.result || ''}</td>
-          <td>${bestResult}</td>
+          <td class="highlight-name">${r.name || ''}</td>
+          <td>${event}</td>
+          <td>${displayResult}</td>
+          <td class="highlight-best">${bestDisplay}</td>
         `;
         tableBody.appendChild(tr);
       });
     }
 
-    // 提交表单
     document.getElementById('recordForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const date = document.getElementById('date').value;
@@ -200,32 +305,28 @@
       const result = document.getElementById('result').value.trim();
       if (!date || !name || !event || !result) return alert('请完整填写所有内容');
 
-      document.querySelector('button[type="submit"]').disabled = true;
-      const { error } = await supabase
-        .from('records')
-        .insert([{ date, name, event, result }]);
-      document.querySelector('button[type="submit"]').disabled = false;
+      const btn = document.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      const { error } = await supabase.from('records').insert([{ date, name, event, result }]);
+      btn.disabled = false;
 
       if (error) {
-        console.error(error);
         alert('提交失败：' + (error.message || error));
         return;
       }
 
-      document.getElementById('result').value = '';
-      document.getElementById('name').value = '';
+      resultInput.value = '';
+      nameInput.value = '';
       autocompleteList.innerHTML = '';
       await loadRecords();
     });
 
-    // 实时更新
     function setupRealtime() {
       supabase.channel('records_realtime')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'records' }, () => loadRecords())
         .subscribe();
     }
 
-    // 导出为 Excel
     function exportToExcel() {
       const dataToExport = filteredDate
         ? allRecords.filter(r => r.date === filteredDate)
@@ -235,14 +336,23 @@
 
       const wsData = [['日期', '姓名', '项目', '成绩', '最佳成绩']].concat(
         dataToExport.map(r => {
-          const userRecords = allRecords.filter(
-            record => record.name === r.name && record.event === r.event
-          );
-          const parseResult = str => parseFloat(str.replace(/[^\d.-]/g, '')) || 0;
-          const isTimeEvent = ['跑步', '100M', '400M', '游泳'].includes(r.event);
-          const values = userRecords.map(r => parseResult(r.result)).filter(v => v);
-          const best = values.length ? (isTimeEvent ? Math.min(...values) : Math.max(...values)) : '—';
-          return [r.date, r.name, r.event, r.result, best];
+          const event = r.event;
+          const unit = EVENT_UNITS[event] || "";
+          const displayResult = formatResultWithUnit(r.result, event);
+
+          let bestExcel = "—";
+          if (isNumericEvent(event)) {
+            const userRecords = allRecords.filter(rec => rec.name === r.name && rec.event === event);
+            const parseNum = s => parseFloat(s.replace(/[^\d.-]/g, '')) || -Infinity;
+            const values = userRecords.map(rec => parseNum(rec.result)).filter(v => isFinite(v));
+            if (values.length > 0) {
+              const isTimeEvent = ["30M","60M","100M","150M","200M","400M"].includes(event);
+              const bestVal = isTimeEvent ? Math.min(...values) : Math.max(...values);
+              bestExcel = `${bestVal} ${unit}`.trim();
+            }
+          }
+
+          return [r.date, r.name, event, displayResult, bestExcel];
         })
       );
 
@@ -254,13 +364,15 @@
 
     // 初始化
     (async () => {
+      document.getElementById('date').value = new Date().toISOString().split('T')[0];
+
       const form = document.getElementById('recordForm');
       const controls = document.createElement('div');
       controls.style.cssText = 'margin:12px 0;display:flex;flex-wrap:wrap;gap:8px';
       controls.innerHTML = `
-        <button type="button" id="btnToday" style="font-size:13px;padding:6px 10px;">查看今天</button>
-        <button type="button" id="btnAll" style="font-size:13px;padding:6px 10px;">查看全部</button>
-        <button type="button" id="btnExport" style="font-size:13px;padding:6px 10px;background:#2e7d32;">导出 Excel</button>
+        <button type="button" id="btnToday">查看今天</button>
+        <button type="button" id="btnAll">查看全部</button>
+        <button type="button" id="btnExport" style="background:#00aa55;">导出 Excel</button>
       `;
       form.parentNode.insertBefore(controls, form.nextSibling);
 
@@ -274,15 +386,15 @@
       };
       document.getElementById('btnExport').onclick = exportToExcel;
 
-      // 点击姓名输入框显示预设列表
-      nameInput.onclick = showAutocomplete;
+      eventSelect.addEventListener('change', updateResultPlaceholder);
+      updateResultPlaceholder();
 
-      // 点击页面其他地方隐藏列表
-      document.onclick = (e) => {
-        if (e.target !== nameInput) {
+      nameInput.onclick = showAutocomplete;
+      document.addEventListener('click', (e) => {
+        if (e.target !== nameInput && !autocompleteList.contains(e.target)) {
           autocompleteList.innerHTML = '';
         }
-      };
+      });
 
       await loadRecords();
       setupRealtime();
@@ -290,4 +402,5 @@
   </script>
 </body>
 </html>
+
 
